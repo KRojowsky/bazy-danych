@@ -1,137 +1,134 @@
-CREATE DATABASE firma2;
-GO
+USE firma2
 
-USE firma2;
-GO
+-- a.Wyœwietl tylko id pracownika oraz jego nazwisko. 
+SELECT id_pracownika, nazwisko
+FROM ksiegowosc.pracownicy;
 
-CREATE SCHEMA ksiegowosc;
-GO
+--b.Wyœwietl pracowników których p³aca jest wiêksza niz 1000
+SELECT 
+    ksiegowosc.pracownicy.imie, 
+    ksiegowosc.pracownicy.nazwisko, 
+    ksiegowosc.pensja.stanowisko, 
+    ksiegowosc.pensja.kwota 
+FROM 
+    ksiegowosc.wynagrodzenie
+JOIN 
+    ksiegowosc.pracownicy ON ksiegowosc.wynagrodzenie.id_pracownika = ksiegowosc.pracownicy.id_pracownika
+JOIN
+    ksiegowosc.pensja ON ksiegowosc.wynagrodzenie.id_pensji = ksiegowosc.pensja.id_pensji
+WHERE 
+    ksiegowosc.pensja.kwota > 1000;
 
---Dane osobowe pracownikow
-CREATE TABLE ksiegowosc.pracownicy
-(
-    id_pracownika int PRIMARY KEY,
-    imie varchar(30) NOT NULL,
-    nazwisko varchar(30) NOT NULL,
-    adres varchar(100) NOT NULL,
-    telefon varchar(20) NOT NULL
-);
+--c.Wyœwietl pracowników nieposiadaj¹cych premii których p³aca jest wieksza niz 2000
+SELECT 
+    ksiegowosc.pracownicy.imie, 
+    ksiegowosc.pracownicy.nazwisko, 
+    ksiegowosc.pensja.stanowisko, 
+    ksiegowosc.pensja.kwota 
+FROM 
+    ksiegowosc.wynagrodzenie
+JOIN 
+    ksiegowosc.pracownicy ON ksiegowosc.wynagrodzenie.id_pracownika = ksiegowosc.pracownicy.id_pracownika
+JOIN
+    ksiegowosc.pensja ON ksiegowosc.wynagrodzenie.id_pensji = ksiegowosc.pensja.id_pensji
+JOIN
+    ksiegowosc.premia ON ksiegowosc.wynagrodzenie.id_premii = ksiegowosc.premia.id_premii
+WHERE 
+    ksiegowosc.pensja.kwota > 2000 AND ksiegowosc.premia.kwota = 0;
 
---Informacje odtyczace godzin przepracowanych
-CREATE TABLE ksiegowosc.godziny
-(
-    id_godziny int PRIMARY KEY,
-    data_ date NOT NULL,
-    liczba_godzin int NOT NULL,
-    id_pracownika int NOT NULL
-	FOREIGN KEY (id_pracownika) REFERENCES ksiegowosc.pracownicy(id_pracownika)
-);
+--d.Wyœwietl pracowników, których pierwsza litera imienia zaczyna siê na literê ‘J’. 
+SELECT id_pracownika, imie , nazwisko
+FROM ksiegowosc.pracownicy
+WHERE imie LIKE 'J%'; -- % - dowolny ciag znakow 
 
---Informacje dotyczn¹ce pensji ka¿dego pracownika
-CREATE TABLE ksiegowosc.pensja
-(
-    id_pensji int PRIMARY KEY,
-    stanowisko varchar(50) NOT NULL,
-    kwota decimal(10,2) NOT NULL,
-);
+--e. Wyœwietl pracowników, których nazwisko zawiera literê ‘n’ oraz imiê koñczy siê na literê ‘a’. 
+SELECT id_pracownika, imie , nazwisko
+FROM ksiegowosc.pracownicy
+WHERE imie LIKE '%a' AND nazwisko LIKE '%n%';
 
---Informacje dotyc¹ce premii dla pracownikow
-CREATE TABLE ksiegowosc.premia
-(
-    id_premii int PRIMARY KEY,
-    rodzaj varchar(30) NOT NULL,
-    kwota decimal(10,2) NOT NULL
-);
+--f.Wyœwietl imiê i nazwisko pracowników oraz liczbê ich nadgodzin, przyjmuj¹c, i¿ standardowy czas pracy to 160 h miesiêcznie. 
+SELECT
+	ksiegowosc.pracownicy.imie, 
+    ksiegowosc.pracownicy.nazwisko,
+	CASE
+        WHEN SUM(ksiegowosc.godziny.liczba_godzin) > 160 THEN SUM(ksiegowosc.godziny.liczba_godzin) - 160
+        ELSE 0
+    END AS liczba_nadgodzin
+FROM
+	ksiegowosc.godziny
+JOIN 
+	ksiegowosc.pracownicy ON ksiegowosc.pracownicy.id_pracownika = ksiegowosc.godziny.id_pracownika
+GROUP BY
+	ksiegowosc.pracownicy.imie,
+	ksiegowosc.pracownicy.nazwisko;
 
-GO
+--g.Imie i nazwisko pracownikow ktorych pensja jest w przedziale 1500-3000
+SELECT 
+    ksiegowosc.pracownicy.imie, 
+    ksiegowosc.pracownicy.nazwisko,  
+    ksiegowosc.pensja.kwota 
+FROM 
+    ksiegowosc.wynagrodzenie
+JOIN 
+    ksiegowosc.pracownicy ON ksiegowosc.wynagrodzenie.id_pracownika = ksiegowosc.pracownicy.id_pracownika
+JOIN
+    ksiegowosc.pensja ON ksiegowosc.wynagrodzenie.id_pensji = ksiegowosc.pensja.id_pensji
+WHERE 
+    ksiegowosc.pensja.kwota > 1500 AND ksiegowosc.pensja.kwota < 3000;
 
---Ifnormacje o wynagordzeniach pracownikow uwzgledniajace pensje i premie
-CREATE TABLE ksiegowosc.wynagrodzenie
-(
-    id_wynagrodzenia int PRIMARY KEY,
-	data_ date NOT NULL,
-	id_pracownika int NOT NULL,
-	id_godziny int NOT NULL,
-	id_pensji int NOT NULL,
-	id_premii int NOT NULL,
-	FOREIGN KEY (id_pracownika) REFERENCES ksiegowosc.pracownicy(id_pracownika),
-	FOREIGN KEY (id_godziny) REFERENCES ksiegowosc.godziny(id_godziny),
-	FOREIGN KEY (id_pensji) REFERENCES ksiegowosc.pensja(id_pensji),
-	FOREIGN KEY (id_premii) REFERENCES ksiegowosc.premia(id_premii)
-    
-);
+--h.Wyœwietl imiê i nazwisko pracowników, którzy pracowali w nadgodzinach i nie otrzymali premii.
+SELECT
+	ksiegowosc.pracownicy.imie, 
+    ksiegowosc.pracownicy.nazwisko, 
+	ksiegowosc.premia.kwota,
+	ksiegowosc.godziny.liczba_godzin
+FROM
+	ksiegowosc.wynagrodzenie
+JOIN
+	ksiegowosc.pracownicy ON ksiegowosc.wynagrodzenie.id_pracownika = ksiegowosc.pracownicy.id_pracownika
+JOIN
+	ksiegowosc.premia ON ksiegowosc.wynagrodzenie.id_premii = ksiegowosc.premia.id_premii
+JOIN
+	ksiegowosc.godziny ON ksiegowosc.wynagrodzenie.id_godziny = ksiegowosc.godziny.id_godziny
+WHERE
+	ksiegowosc.premia.kwota = 400
+GROUP BY
+	ksiegowosc.pracownicy.imie, 
+    ksiegowosc.pracownicy.nazwisko,
+	ksiegowosc.premia.kwota,
+	ksiegowosc.godziny.liczba_godzin
+HAVING
+	SUM(ksiegowosc.godziny.liczba_godzin)>160;
 
-GO
+--i.Uszereguj pracownikow wedlug pensji
+SELECT 
+    ksiegowosc.pracownicy.imie, 
+    ksiegowosc.pracownicy.nazwisko, 
+	ksiegowosc.pensja.stanowisko,
+    ksiegowosc.pensja.kwota
+FROM 
+    ksiegowosc.wynagrodzenie
+JOIN 
+    ksiegowosc.pracownicy ON ksiegowosc.wynagrodzenie.id_pracownika = ksiegowosc.pracownicy.id_pracownika
+JOIN
+    ksiegowosc.pensja ON ksiegowosc.wynagrodzenie.id_pensji = ksiegowosc.pensja.id_pensji
+ORDER BY
+	ksiegowosc.pensja.kwota DESC;
 
-INSERT INTO ksiegowosc.pracownicy (id_pracownika, imie, nazwisko, adres, telefon)
-VALUES 
-(1, 'Jan', 'Kowalski', 'ul. Wiejska 1', '123456789'),
-(2, 'Anna', 'Nowak', 'ul. Kwiatowa 5', '987654321'),
-(3, 'Piotr', 'Wiœniewski', 'ul. Leœna 10', '555444333'),
-(4, 'Maria', 'D¹browska', 'ul. Szkolna 7', '111222333'),
-(5, 'Adam', 'Lis', 'ul. Parkowa 3', '777888999'),
-(6, 'Karolina', 'Zaj¹c', 'ul. Polna 12', '444555666'),
-(7, 'Kamil', 'Wójcik', 'ul. Zielona 8', '999888777'),
-(8, 'Ewa', 'Kaczmarek', 'ul. Ogrodowa 15', '333222111'),
-(9, 'Tomasz', 'Wojciechowski', 'ul. Miodowa 9', '666777888'),
-(10, 'Aleksandra', 'Jankowska', 'ul. Nowa 6', '222333444');
-
-GO
-
-INSERT INTO ksiegowosc.godziny (id_godziny, data_, liczba_godzin, id_pracownika)
-VALUES 
-(1, '2024-04-01', 8, 1),
-(2, '2024-04-01', 7, 2),
-(3, '2024-04-02', 6, 3),
-(4, '2024-04-02', 8, 4),
-(5, '2024-04-03', 8, 5),
-(6, '2024-04-03', 7, 6),
-(7, '2024-04-04', 6, 7),
-(8, '2024-04-04', 8, 8),
-(9, '2024-04-05', 8, 9),
-(10, '2024-04-05', 7, 10);
-
-GO
-
-INSERT INTO ksiegowosc.premia (id_premii, rodzaj, kwota)
-VALUES 
-(1, 'Premia kwartalna', 500.00),
-(2, 'Premia za wyniki', 700.00),
-(3, 'Premia roczna', 1000.00),
-(4, 'Premia uznaniowa', 800.00),
-(5, 'Premia za sta¿ pracy', 600.00),
-(6, 'Premia za osi¹gniêcia', 900.00),
-(7, 'Premia œwi¹teczna', 400.00),
-(8, 'Premia motywacyjna', 600.00),
-(9, 'Premia jubileuszowa', 1200.00),
-(10, 'Premia œwi¹teczna', 400.00);
-
-GO
-
-INSERT INTO ksiegowosc.pensja (id_pensji, stanowisko, kwota)
-VALUES 
-(1, 'Specjalista ds. sprzeda¿y', 4500.00),
-(2, 'Ksiêgowy', 3800.00),
-(3, 'Informatyk', 5000.00),
-(4, 'Asystentka biura', 3200.00),
-(5, 'Administrator systemów', 5500.00),
-(6, 'Doradca klienta', 4000.00),
-(7, 'Analityk finansowy', 4800.00),
-(8, 'Kierownik magazynu', 4200.00),
-(9, 'Specjalista ds. HR', 4700.00),
-(10, 'Pracownik produkcji', 3500.00);
-
-GO
-
-INSERT INTO ksiegowosc.wynagrodzenie (id_wynagrodzenia, data_, id_pracownika, id_godziny, id_pensji, id_premii)
-VALUES 
-(1, '2024-04-15', 1,1,1,1),
-(2, '2024-04-15', 2,2,2,2),
-(3, '2024-04-15', 3,3,3,3),
-(4, '2024-04-15', 4,4,4,4),
-(5, '2024-04-15', 5,5,5,5),
-(6, '2024-04-15', 6,6,6,6),
-(7, '2024-04-15', 7,7,7,7),
-(8, '2024-04-15', 8,8,8,8),
-(9, '2024-04-15', 9,9,9,9),
-(10, '2024-04-15', 10,10,10,10);
+--j.Uszereguj pracownikow wedlug pensji i premii malejaco
+SELECT 
+    ksiegowosc.pracownicy.imie, 
+    ksiegowosc.pracownicy.nazwisko,
+	ksiegowosc.pensja.stanowisko,
+    ksiegowosc.pensja.kwota,
+	ksiegowosc.premia.kwota
+FROM 
+    ksiegowosc.wynagrodzenie
+JOIN 
+    ksiegowosc.pracownicy ON ksiegowosc.wynagrodzenie.id_pracownika = ksiegowosc.pracownicy.id_pracownika
+JOIN
+    ksiegowosc.pensja ON ksiegowosc.wynagrodzenie.id_pensji = ksiegowosc.pensja.id_pensji
+JOIN
+    ksiegowosc.premia ON ksiegowosc.wynagrodzenie.id_premii = ksiegowosc.premia.id_premii
+ORDER BY
+	(ksiegowosc.pensja.kwota + ksiegowosc.premia.kwota) ASC;
