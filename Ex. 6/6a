@@ -1,0 +1,18 @@
+ZALEZNOSCI FUNKCYJNE:
+id_produktu -> nazwa_produktu, cena_produktu, VAT
+suma_netto, VAT, cena_produktu,ilosc -> suma_brutto
+cena_produktu,ilosc -> suma_netto
+id_klienta -> nazwa_klienta, data_zamowienia, ilość, id_produktu, suma_brutto, suma_netto
+
+KLUCZE KANDYDUJACE: 
+id_produktu
+id_klienta
+
+ZALEZNOSCI FUNKCYJNE:
+id_pomieszczenia -> numer_pomieszczenia, id_budynku, powierzchnia, liczba_okien, liczba_drzwi
+id_budynku -> ulica, miasto, kod_pocztowy
+kod_pocztowy -> miasto
+
+KLUCZE KANDYDUJACE: 
+id_pomieszczenia
+id_budynku
